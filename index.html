@@ -221,6 +221,23 @@ details.alt summary{cursor:pointer;font-size:12.5px;color:var(--muted)}
 .optmodes{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;font-size:12.5px}
 .optmodes select{width:auto;padding:3px 6px;font-size:12px}
 .req{font-size:10px;color:var(--green);font-weight:700;margin-left:2px}
+.aiband{max-width:1440px;margin:12px auto 0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.aiband>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:8px 8px 8px 12px;font-size:13px}
+.aiband .sp{flex:1}
+.aiband.soft>div{background:var(--green-soft);color:var(--ink)}
+.aim{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.aim .hint{margin:0}
+.aim-h{display:flex;align-items:center;gap:8px}
+.aim-h b{font-size:13.5px}
+.aim-st{margin-left:auto;font-size:11.5px;font-weight:700;border-radius:10px;padding:1px 8px;background:var(--bg);color:var(--muted);white-space:nowrap}
+.aim-st.on{background:var(--green);color:#fff}
+.aim-st.off{background:var(--warn-bg);color:var(--warn)}
+.aim-btns{display:flex;gap:8px;flex-wrap:wrap}
+.aim-st:empty{display:none}
+a.btn{text-decoration:none;color:inherit}
+a.btn.pri{color:#fff}
+.aim .status:empty{display:none}
+.aim.cur{border-color:var(--green);box-shadow:inset 3px 0 0 var(--green)}
 .toast{position:fixed;left:50%;bottom:calc(70px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 14px;border-radius:8px;font-size:13px;z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
 footer.foot{max-width:1440px;margin:0 auto;padding-block:0 90px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-size:11.5px;color:var(--muted)}
@@ -250,6 +267,7 @@ footer.foot{max-width:1440px;margin:0 auto;padding-block:0 90px;padding-left:max
 </div></div>
 
 <div class="notice" id="notice" hidden><div id="noticeText"></div></div>
+<div class="aiband" id="aiBand" hidden><div><span id="aiBandText"></span><span class="sp"></span><button class="btn pri" id="aiBandBtn">Claude 연결하기</button><button class="btn" id="aiBandMore">연결 방법 보기</button><button class="x" id="aiBandX" aria-label="닫기">×</button></div></div>
 <main class="wrap" id="write">
   <div class="col">
     <!-- 0 기본 정보 -->
@@ -424,24 +442,34 @@ footer.foot{max-width:1440px;margin:0 auto;padding-block:0 90px;padding-left:max
 <section class="card tpanel" id="aiPanel" hidden aria-label="Claude 연결">
   <header><span class="tdot" style="background:var(--green);font-size:9px" aria-hidden="true">AI</span><h2>Claude 연결</h2><button class="x" id="aiClose" aria-label="닫기" style="margin-left:auto">×</button></header>
   <div class="body">
-    <div id="aiInArt" class="hint" hidden>claude.ai 게시본에서는 로그인한 Claude 계정으로 바로 작성합니다. 처음 만들 때 뜨는 허용 창에서 <b>허용</b>을 누르세요. 거절했다면 페이지를 새로 열면 다시 묻습니다.</div>
-    <div id="aiKeyBox">
-      <p class="hint" style="margin:0 0 8px">파일로 열었거나 Claude 계정 연결이 안 될 때, Anthropic API 키로 연결합니다. 키는 이 브라우저에서 Anthropic으로만 보내고 다른 곳에는 보내지 않습니다.</p>
+    <div class="aim" id="aimAcct">
+      <div class="aim-h"><b>본인 Claude 계정</b><span class="aim-st" id="acctState">확인 중</span></div>
+      <p class="hint" id="acctHint"></p>
+      <div class="aim-btns"><button class="btn pri" id="acctBtn" hidden></button><a class="btn pri" id="acctLink" target="_blank" rel="noopener" hidden>claude.ai에서 열기</a></div>
+    </div>
+    <div class="aim" id="aiKeyBox">
+      <div class="aim-h"><b>Claude API 키</b><span class="aim-st" id="keyState"></span></div>
+      <p class="hint">파일로 열었을 때 쓰는 방법입니다. 키는 이 브라우저에서 Anthropic으로만 보내고, 사용료는 키 주인 계정에 청구됩니다.</p>
       <label class="f">API 키<input type="password" id="ai_key" placeholder="sk-ant-..." autocomplete="off" spellcheck="false"></label>
-      <label class="f" style="margin-top:8px">모델<input type="text" id="ai_model" list="aiModels" value="claude-sonnet-5-5" spellcheck="false"></label>
+      <label class="f">모델<input type="text" id="ai_model" list="aiModels" value="claude-sonnet-5-5" spellcheck="false"></label>
       <datalist id="aiModels"><option value="claude-sonnet-5-5"></option><option value="claude-opus-5-5"></option><option value="claude-haiku-4-5"></option></datalist>
-      <label class="tog" style="margin-top:8px"><input type="checkbox" id="ai_remember">이 브라우저에 키 기억</label>
-      <p class="hint" style="color:var(--warn);margin:4px 0 0">공용 PC에서는 기억을 끄세요. 끄면 창을 닫을 때 키가 지워집니다.</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <label class="tog" style="align-self:flex-start"><input type="checkbox" id="ai_remember">이 브라우저에 키 기억</label>
+      <p class="hint" style="color:var(--warn)">공용 PC에서는 기억을 끄세요. 끄면 창을 닫을 때 키가 지워집니다.</p>
+      <div class="aim-btns">
         <button class="btn pri" id="ai_test">연결 확인</button>
         <button class="btn" id="ai_clear">연결 해제</button>
         <a class="btn" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">키 발급 페이지</a>
       </div>
       <p class="status" id="ai_msg"></p>
     </div>
-    <div style="border-top:1px dashed var(--line);padding-top:8px">
-      <p class="hint" style="margin:0 0 6px">키 없이 쓰려면: 요청문을 복사해 Claude 웹에 붙여넣고, 답을 [다른 AI 창에서 작성하기]에 붙여넣으세요.</p>
-      <button class="btn" id="ai_web">요청문 복사 후 Claude 열기</button>
+    <div class="aim">
+      <div class="aim-h"><b>Claude 채팅창 복사·붙여넣기</b><span class="aim-st">언제나 가능</span></div>
+      <p class="hint">요청문을 복사해 본인 Claude 채팅에 붙여넣고, 받은 답(JSON)을 [다른 AI 창에서 작성하기]에 붙여넣습니다. 사진·영수증은 채팅에 직접 첨부하세요.</p>
+      <div class="aim-btns"><button class="btn" id="ai_web">요청문 복사 후 Claude 열기</button></div>
+    </div>
+    <div class="aim">
+      <div class="aim-h"><b>AI 없이</b></div>
+      <p class="hint">출장결과 칸에 직접 써도 점검·PDF·Word 저장은 그대로 됩니다.</p>
     </div>
   </div>
 </section>
@@ -496,6 +524,7 @@ footer.foot{max-width:1440px;margin:0 auto;padding-block:0 90px;padding-left:max
     <div class="agrid">
       <label class="f">API 연결 기본 모델<input type="text" id="a_model" list="aiModels"></label>
       <label class="tog" style="align-self:end"><input type="checkbox" id="a_allowKey">파일 버전에서 API 키 연결 허용</label>
+      <label class="f" style="grid-column:1/-1">본인 계정으로 열 claude.ai 페이지 주소 (파일 버전의 [claude.ai에서 열기])<input type="text" id="a_claudeUrl" placeholder="https://claude.ai/artifact/..."></label>
     </div>
     <h3>공지</h3>
     <label class="f">화면 상단 공지 (비우면 숨김)<textarea id="a_notice" rows="2" placeholder="예: 11월부터 국외출장은 출발 2주 전 센터 승인 필수"></textarea></label>
@@ -541,7 +570,7 @@ const F = (id) => $('#' + id).value.trim();
 /* ---------- 관리자 설정 ---------- */
 const BASIC={b_rank:'rank',b_name:'name',b_org:'org',b_period:'period',b_biz:'biz',b_biz2:'biz2',b_task:'task'};
 const DEF_CFG={basic:{rank:'ANCHOR사업단장',name:'원종필',org:'서울연구원',period:'2025. 06. 01. - 2026. 02. 28.',biz:'지역성장 인재양성체계(ANCHOR)',biz2:'서울연구원 / ANCHOR사업',task:'4. 산학협력 생태계 활성화'},
-  lockBasic:false, tasks:['4. 산학협력 생태계 활성화'], opts:{}, many:5, depth:'표준', days:7, extra:'', model:'claude-sonnet-5-5', allowKey:true, notice:'', teams:'coolzet@konkuk.ac.kr', pw:null, updated:''};
+  lockBasic:false, tasks:['4. 산학협력 생태계 활성화'], opts:{}, many:5, depth:'표준', days:7, extra:'', model:'claude-sonnet-5-5', allowKey:true, claudeUrl:'', notice:'', teams:'coolzet@konkuk.ac.kr', pw:null, updated:''};
 const PW_DEF={sha:'0feacce67aa5569084d4ce4f38dfdb15efb33b35cadf4728712ca9ad07cbf042', fnv:'883e1f7c'};
 const LCFG='kutrip.admincfg.v1';
 function mergeCfg(...xs){ const o=JSON.parse(JSON.stringify(DEF_CFG)); xs.forEach(x=>{ if(!x||typeof x!=='object') return; Object.keys(DEF_CFG).forEach(k=>{ if(x[k]===undefined) return; if(k==='basic'||k==='opts') o[k]={...o[k],...x[k]}; else o[k]=x[k]; }); }); return o; }
@@ -1034,17 +1063,71 @@ function applyResult(r){
 }
 
 /* ---------- AI ---------- */
-let sample=null, imgMax=0, ctl=null, sampleChecked=false;
+let sample=null, imgMax=0, ctl=null, sampleChecked=false, perm=null, sampleState='checking';
 const AKEY='kutrip.apikey', AMODEL='kutrip.model';
+const ART_URL_DEF='https://claude.ai/artifact/NWthPVpE4kFgSqfG5f2ia5';
+const IN_ART=!!window.claude;
 function apiKey(){ return F('ai_key'); }
-function aiMode(){ return sample ? 'claude' : (apiKey() && CFG.allowKey!==false && !window.claude ? 'api' : null); }
+function acctUsable(){ return !!sample && (sampleState==='granted'||sampleState==='prompt'); }
+function aiMode(){ return acctUsable() ? 'claude' : (apiKey() && CFG.allowKey!==false && !IN_ART ? 'api' : null); }
+async function refreshSample(){
+  if(!IN_ART){ sampleState='file'; return; }
+  if(!sample){ sampleState='unavailable'; return; }
+  try{ perm = perm || await window.claude.use('permissions'); }catch(e){ perm=null; }
+  try{ const st = perm ? await perm.state('sample') : 'prompt'; sampleState = st||'prompt'; }catch(e){ sampleState='prompt'; }
+}
 function paintChip(){
   const chip=$('#aiChip'); const m=aiMode();
-  if(m==='claude'){ chip.className='ai-pill on'; chip.textContent= imgMax ? 'Claude 연결 · 이미지 읽기' : 'Claude 연결 · 글자만'; }
-  else if(m==='api'){ chip.className='ai-pill on'; chip.textContent=`Claude API 연결 · ${F('ai_model')||'모델 미지정'}`; }
+  if(m==='claude'){ chip.className= sampleState==='granted'?'ai-pill on':'ai-pill'; chip.textContent= sampleState==='granted' ? `본인 Claude 계정 · 연결됨` : '본인 Claude 계정 · 허용 필요'; }
+  else if(m==='api'){ chip.className='ai-pill on'; chip.textContent=`Claude API · ${F('ai_model')||'모델 미지정'}`; }
   else { chip.className= sampleChecked?'ai-pill off':'ai-pill'; chip.textContent= sampleChecked ? 'Claude 미연결 · 연결하기' : 'Claude 연결 확인 중'; }
+  renderAcct(); renderBand();
 }
-function aiToggle(on){ const p=$('#aiPanel'); p.hidden=!on; $('#aiChip').setAttribute('aria-expanded',String(on)); if(on){ $('#teamsPanel').hidden=true; const inArt=!!window.claude; $('#aiInArt').hidden=!(inArt && sample); $('#aiKeyBox').hidden=!!(inArt) || CFG.allowKey===false; if(!inArt) $('#ai_key').focus(); } }
+function renderAcct(){
+  const st=$('#acctState'), hint=$('#acctHint'), btn=$('#acctBtn'), link=$('#acctLink');
+  btn.hidden=true; link.hidden=true;
+  const S2={granted:['연결됨','on'], prompt:['허용 필요',''], denied:['꺼짐','off'], unavailable:['사용 불가','off'], file:['파일에서는 불가',''], checking:['확인 중','']}[sampleState]||['',''];
+  st.textContent=S2[0]; st.className='aim-st '+S2[1];
+  if(sampleState==='file'){
+    hint.textContent='로그인한 claude.ai에서 출장김군을 열면 본인 Claude 계정으로 바로 작성합니다. 페이지가 조직에 공유되어 있어야 열리고, 지금 입력값·첨부 파일은 옮겨지지 않습니다.';
+    link.href=CFG.claudeUrl||ART_URL_DEF; link.hidden=false;
+  } else if(sampleState==='granted'){
+    hint.textContent='로그인한 본인 계정으로 작성합니다. 사용량은 본인 Claude 요금제에서 차감됩니다.';
+    btn.textContent='권한 관리'; btn.className='btn'; btn.hidden=!perm; btn.dataset.act='manage';
+  } else if(sampleState==='prompt'){
+    hint.textContent='[Claude 연결하기]를 누르고 뜨는 창에서 허용을 고르면 본인 계정으로 작성합니다. 사진·영수증을 읽도록 이미지 보내기도 함께 허용됩니다.';
+    btn.textContent='Claude 연결하기'; btn.className='btn pri'; btn.hidden=false; btn.dataset.act='request';
+  } else if(sampleState==='denied'){
+    hint.textContent='이 페이지에서 Claude 사용을 허용하지 않은 상태입니다. [권한 다시 켜기]에서 Claude를 켜세요.';
+    btn.textContent='권한 다시 켜기'; btn.className='btn pri'; btn.hidden=!perm; btn.dataset.act='manage';
+  } else if(sampleState==='unavailable'){
+    hint.textContent='로그인이 풀렸거나 조직 설정으로 이 페이지에서 Claude를 쓸 수 없습니다. 다시 로그인하거나 아래 채팅창 붙여넣기를 쓰세요.';
+  } else hint.textContent='';
+  $('#aimAcct').classList.toggle('cur', aiMode()==='claude');
+  $('#aiKeyBox').classList.toggle('cur', aiMode()==='api');
+  $('#keyState').textContent = aiMode()==='api' ? '연결됨' : (apiKey()?'확인 전':'');
+  $('#keyState').className='aim-st '+(aiMode()==='api'?'on':'');
+}
+function bandOff(){ try{ return sessionStorage.getItem('kutrip.aiband')==='off'; }catch(e){ return false; } }
+function renderBand(){
+  const b=$('#aiBand'); const m=aiMode();
+  let text='', btn='', soft=false;
+  if(!sampleChecked || m==='api' || (m==='claude' && sampleState==='granted')){ b.hidden=true; return; }
+  if(m==='claude' && sampleState==='prompt'){ text='본인 Claude 계정을 연결하면 자료·사진·영수증을 읽어 보고서를 씁니다.'; btn='Claude 연결하기'; soft=true; }
+  else if(sampleState==='denied'){ text='이 페이지에서 Claude 사용이 꺼져 있습니다.'; btn='권한 다시 켜기'; }
+  else if(sampleState==='file'){ text='Claude가 연결되지 않았습니다. 본인 계정(claude.ai), API 키, 채팅창 붙여넣기 중에서 고르세요.'; btn='Claude 연결하기'; }
+  else { text='이 화면에서는 Claude 계정을 쓸 수 없습니다. 채팅창 붙여넣기로 작성할 수 있습니다.'; btn='연결 방법 보기'; }
+  $('#aiBandText').textContent=text; $('#aiBandBtn').textContent=btn; b.classList.toggle('soft',soft);
+  $('#aiBandMore').hidden = btn==='연결 방법 보기';
+  b.hidden=bandOff();
+}
+async function acctAction(act){
+  if(act==='request' && perm){ try{ await perm.request(['sample']); }catch(e){} }
+  else if(act==='manage' && perm){ try{ await perm.manage(); }catch(e){ toast('페이지 오른쪽 위 메뉴의 권한(Permissions)에서 Claude를 켜세요'); } }
+  await refreshSample(); paintChip();
+  if(sampleState==='granted') toast('본인 Claude 계정에 연결했습니다');
+}
+function aiToggle(on){ const p=$('#aiPanel'); p.hidden=!on; $('#aiChip').setAttribute('aria-expanded',String(on)); if(on){ $('#teamsPanel').hidden=true; $('#adminPanel').hidden=true; $('#aiKeyBox').hidden=IN_ART || CFG.allowKey===false; renderAcct(); } }
 try{ const k=localStorage.getItem(AKEY); if(k){ $('#ai_key').value=k; $('#ai_remember').checked=true; } const m=localStorage.getItem(AMODEL); if(m) $('#ai_model').value=m; }catch(e){}
 try{ if(!$('#ai_key').value){ const k=sessionStorage.getItem(AKEY); if(k) $('#ai_key').value=k; } }catch(e){}
 function storeKey(){
@@ -1058,6 +1141,7 @@ $('#ai_remember').addEventListener('change',storeKey);
 (async()=>{
   try{ sample = window.claude ? await window.claude.use('sample') : null; }catch(e){ sample=null; }
   if(sample){ try{ const lim=await sample.limits(); imgMax=lim.images?.maxCount||0; }catch(e){ imgMax=0; } }
+  await refreshSample();
   sampleChecked=true; paintChip();
   if(!aiMode()) $('#altBox').open=true;
 })();
@@ -1083,6 +1167,10 @@ async function apiCall(prompt, blobs, signal, maxTokens=16000){
   return {text, truncated: j.stop_reason==='max_tokens'};
 }
 $('#aiChip').addEventListener('click',()=>aiToggle($('#aiPanel').hidden));
+$('#acctBtn').addEventListener('click',()=>acctAction($('#acctBtn').dataset.act));
+$('#aiBandBtn').addEventListener('click',()=>{ if(sampleState==='prompt' && perm) acctAction('request'); else if(sampleState==='denied' && perm) acctAction('manage'); else aiToggle(true); });
+$('#aiBandMore').addEventListener('click',()=>aiToggle(true));
+$('#aiBandX').addEventListener('click',()=>{ try{ sessionStorage.setItem('kutrip.aiband','off'); }catch(e){} $('#aiBand').hidden=true; });
 $('#aiClose').addEventListener('click',()=>aiToggle(false));
 $('#ai_clear').addEventListener('click',()=>{ $('#ai_key').value=''; $('#ai_remember').checked=false; storeKey(); $('#ai_msg').textContent='연결을 해제하고 저장된 키를 지웠습니다.'; });
 $('#ai_test').addEventListener('click',async()=>{
@@ -1107,6 +1195,7 @@ const ERR={not_granted:'이 화면에서 Claude 사용이 허용되지 않았습
 async function generate(){
   if(!S.files.length && !F('memo')){ setStatus('자료나 메모를 하나 이상 넣어 주세요.', true); return; }
   if(S.files.some(f=>!f.text && !f.err && f.kind!=='image')){ setStatus('파일을 읽는 중입니다. 잠시 뒤 눌러 주세요.', true); return; }
+  if(sample && sampleChecked){ await refreshSample(); paintChip(); }
   const mode=aiMode();
   if(!mode){ setStatus('Claude에 연결되지 않았습니다. 상단 [Claude 미연결 · 연결하기]에서 연결하거나 아래 [다른 AI 창에서 작성하기]를 쓰세요.', true); $('#altBox').open=true; aiToggle(true); return; }
   const btn=$('#genBtn'); btn.disabled=true; $('#stopBtn').hidden=false;
@@ -1130,6 +1219,7 @@ async function generate(){
     if(e?.code==='cancelled') setStatus('멈췄습니다.');
     else setStatus(ERR[e?.code] || '작성 중 문제가 생겼습니다. 다시 눌러 주세요.', true);
     if(['not_granted','sampling_disabled','images_unavailable'].includes(e?.code)) $('#altBox').open=true;
+    if(e?.code==='not_granted'){ sampleState='denied'; paintChip(); } else if(e?.code==='sampling_disabled'){ sampleState='unavailable'; paintChip(); }
   }finally{ btn.disabled=false; $('#stopBtn').hidden=true; }
 }
 $('#genBtn').addEventListener('click',generate);
@@ -1360,7 +1450,7 @@ function fillAdmin(c){
   $('#a_lockBasic').checked=!!c.lockBasic; $('#a_tasks').value=(c.tasks||[]).join('\n');
   $('#a_opts').innerHTML=OPT_LABELS().map(([k,l])=>`<span>${esc(l)}</span><select data-k="${k}" aria-label="${esc(l)}">${[['off','사용 안 함'],['opt','선택'],['on','기본 켬'],['req','필수']].map(([v,t])=>`<option value="${v}" ${ (c.opts[k]||'opt')===v?'selected':''}>${t}</option>`).join('')}</select>`).join('');
   $('#a_many').value=c.many; $('#a_depth').value=c.depth; $('#a_days').value=c.days; $('#a_teams').value=c.teams; $('#a_extra').value=c.extra||'';
-  $('#a_model').value=c.model||''; $('#a_allowKey').checked=c.allowKey!==false; $('#a_notice').value=c.notice||''; $('#a_pwnew').value='';
+  $('#a_model').value=c.model||''; $('#a_allowKey').checked=c.allowKey!==false; $('#a_claudeUrl').value=c.claudeUrl||ART_URL_DEF; $('#a_notice').value=c.notice||''; $('#a_pwnew').value='';
   $('#a_where').textContent = dbApi ? `저장하면 이 페이지를 여는 모든 사람에게 적용됩니다${userApi&&!userApi.canEdit()?' (편집 권한이 있어야 저장됩니다)':''}.${c.updated?' 마지막 저장 '+c.updated:''}` : `파일 버전: 저장하면 이 브라우저에만 적용됩니다. 팀에 배포하려면 [설정 담은 HTML 내보내기]로 파일을 만들어 나눠 주세요.${c.updated?' 마지막 저장 '+c.updated:''}`;
 }
 async function readAdmin(){
@@ -1369,7 +1459,7 @@ async function readAdmin(){
   c.lockBasic=$('#a_lockBasic').checked; c.tasks=$('#a_tasks').value.split('\n').map(x=>x.trim()).filter(Boolean);
   c.opts={}; document.querySelectorAll('#a_opts select').forEach(sl=>{ if(sl.value!=='opt') c.opts[sl.dataset.k]=sl.value; });
   c.many=Math.max(2,Number($('#a_many').value)||5); c.depth=$('#a_depth').value; c.days=Math.max(1,Number($('#a_days').value)||7);
-  c.teams=$('#a_teams').value.trim()||'coolzet@konkuk.ac.kr'; c.extra=$('#a_extra').value.trim(); c.model=$('#a_model').value.trim(); c.allowKey=$('#a_allowKey').checked; c.notice=$('#a_notice').value.trim();
+  c.teams=$('#a_teams').value.trim()||'coolzet@konkuk.ac.kr'; c.extra=$('#a_extra').value.trim(); c.model=$('#a_model').value.trim(); c.allowKey=$('#a_allowKey').checked; c.claudeUrl=$('#a_claudeUrl').value.trim(); c.notice=$('#a_notice').value.trim();
   if($('#a_pwnew').value){ c.pw=await pwHash($('#a_pwnew').value); }
   const d=new Date(); c.updated=`${d.getFullYear()}. ${d.getMonth()+1}. ${d.getDate()}. ${fmtTime(d)}`;
   return c;
